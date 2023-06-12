@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Разноцветный барабан</title>
+  <style>
+    body {
+      background:
+        /* top, transparent black, faked with gradient */ 
+        linear-gradient(
+          rgba(0, 0, 0, 0.2), 
+          rgba(0, 0, 0, 0.2)
+        ),
+        /* bottom, image */
+        url(bg.jpg);
+    
+      background-color: ivory;
+      padding: 10px;
+    }
+
+    .drum{
+      text-align: center;
+    }
+
+    .my_button {
+      background-color: #c92fa7; /* Green */
+      border: none;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+    }
+    h3{
+      color:rgb(246, 232, 255);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="drum">
+    <h3>Разноцветный барабан</h3>
+
+    <canvas id="canvas" width=500 height=500></canvas>
+
+
+    <!-- Создание секторов и цифр на барабане -->
+    <script>
+      var canvas = document.getElementById("canvas");
+      var ctx = canvas.getContext("2d");
+      var cw = canvas.width;
+      var ch = canvas.height;
+
+
+      var PI2 = Math.PI * 2;
+      var myData = Array.from({ length: 40 }, () => Math.floor(Math.random() * 100));
+      var cx = 150;
+      var cy = 150;
+      var radius = 250;
+
+      var wheel = document.createElement('canvas');
+      var wheelCtx = wheel.getContext('2d');
+
+      var indicator = document.createElement('canvas');
+      var indicatorCtx = indicator.getContext('2d');
+
+
+      var angle = PI2 - PI2 / 4;
+
+      var myColor = [];
+      let coords = {};
+      for (var i = 0; i < myData.length; i++) { myColor.push(rainbow(myData.length, i)); }
+
+      makeWheel();
+      makeIndicator();
+
+
+      function makeWheel() {
+
+        wheel.width = wheel.height = radius * 2 + 2;
+        wheelCtx.lineWidth = 1;
+        wheelCtx.font = '24px verdana';
+        wheelCtx.textAlign = 'center';
+        wheelCtx.textBaseline = 'middle';
+
+        var cx = wheel.width / 2;
+        var cy = wheel.height / 2;
+
+        var sweepAngle = PI2 / myData.length;
+        var startAngle = 0;
+        for (var i = 0; i < myData.length; i++) {
+
+          // calc ending angle based on starting angle
+          var endAngle = startAngle + sweepAngle;
+
+          // draw the wedge
+          wheelCtx.beginPath();
+          wheelCtx.moveTo(cx, cy);
+          wheelCtx.arc(cx, cy, radius, startAngle, endAngle, false);
+          wheelCtx.closePath();
+          wheelCtx.fillStyle = myColor[i];
+          wheelCtx.strokeStyle = 'black';
+          wheelCtx.fill();
+          wheelCtx.stroke();
+
+          // draw the label
+          var midAngle = startAngle + (endAngle - startAngle) / 2;
+          var labelRadius = radius * .85;
+          var x = cx + (labelRadius) * Math.cos(midAngle);
+          var y = cy + (labelRadius) * Math.sin(midAngle);
+          wheelCtx.fillStyle = 'gold';
+          wheelCtx.fillText(myData[i], x, y);
+          wheelCtx.strokeText(myData[i], x, y);
+          coords[myData[i]] = [x, y];
+
+          // increment angle
+          startAngle += sweepAngle;
+        }
+
+
+      }
+
+      function makeIndicator() {
+
+        indicator.width = indicator.height = radius + radius / 10;
+        indicatorCtx.font = '18px verdana';
+        indicatorCtx.textAlign = 'center';
+        indicatorCtx.textBaseline = 'middle';
+        indicatorCtx.fillStyle = 'skyblue';
+        indicatorCtx.strokeStyle = 'blue';
+        indicatorCtx.lineWidth = 1;
+
+        var cx = indicator.width / 2;
+        var cy = indicator.height / 2;
+
+        indicatorCtx.beginPath();
+        indicatorCtx.moveTo(cx - radius / 8, cy);
+        indicatorCtx.lineTo(cx, cy - indicator.height / 2);
+        indicatorCtx.lineTo(cx + radius / 8, cy);
+        indicatorCtx.closePath();
+        indicatorCtx.fillStyle = 'skyblue'
+        indicatorCtx.fill();
+        indicatorCtx.stroke();
+
+        indicatorCtx.beginPath();
+        indicatorCtx.arc(cx, cy, radius / 3, 0, PI2);
+        indicatorCtx.closePath();
+        indicatorCtx.fill();
+        indicatorCtx.stroke();
+
+        indicatorCtx.fillStyle = 'blue';
+        indicatorCtx.fillText('Prizes', cx, cy);
+      }
+
+      let is_spin = false;
+      let start_angle;
+
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.translate(cw / 2, ch / 2);
+      ctx.rotate(angle);
+      ctx.drawImage(wheel, -wheel.width / 2, -wheel.height / 2);
+      ctx.rotate(-angle);
+      ctx.translate(-cw / 2, -ch / 2);
+      ctx.drawImage(indicator, cw / 2 - indicator.width / 2, ch / 2 - indicator.height / 2)
+      angle += PI2 / 360;
+
+      function animate(time) {
+        if (is_spin) {
+
+          ctx.clearRect(0, 0, cw, ch);
+          ctx.translate(cw / 2, ch / 2);
+          ctx.rotate(angle);
+          ctx.drawImage(wheel, -wheel.width / 2, -wheel.height / 2);
+          ctx.rotate(-angle);
+          ctx.translate(-cw / 2, -ch / 2);
+          ctx.drawImage(indicator, cw / 2 - indicator.width / 2, ch / 2 - indicator.height / 2)
+          angle += PI2 / 360;
+
+
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      function rainbow(numOfSteps, step) {
+        // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
+        // Adam Cole, 2011-Sept-14
+        // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+        var r, g, b;
+        var h = step / numOfSteps;
+        var i = ~~(h * 6);
+        var f = h * 6 - i;
+        var q = 1 - f;
+        switch (i % 6) {
+          case 0: r = 1; g = f; b = 0; break;
+          case 1: r = q; g = 1; b = 0; break;
+          case 2: r = 0; g = 1; b = f; break;
+          case 3: r = 0; g = q; b = 1; break;
+          case 4: r = f; g = 0; b = 1; break;
+          case 5: r = 1; g = 0; b = q; break;
+        }
+        var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+        return (c);
+      }
+
+      function randomColor() {
+        return ('#' + Math.floor(Math.random() * 16777215).toString(16));
+      }
+      requestAnimationFrame(animate);
+
+      function rotate(cx, cy, x, y, angle) {
+        //var radians = (Math.PI / 180) * angle,
+        cos = Math.cos(angle),
+          sin = Math.sin(angle),
+          nx = (cos * (x - cx)) + (sin * (y - cy)) + cx,
+          ny = (cos * (y - cy)) - (sin * (x - cx)) + cy;
+        return [nx, ny];
+      }
+
+      function rotate_c(angle){
+        for (var key in coords) {
+          // check if the property/key is defined in the object itself, not in parent
+          if (coords.hasOwnProperty(key)) {
+            coords[key] = rotate(cx, cy, coords[key][0], coords[key][1], angle)
+
+          }
+        }
+      }
+
+      function getFirst(){
+        
+        let min = 1000000000;
+        let min_v;
+        for (var key in coords) {
+          // check if the property/key is defined in the object itself, not in parent
+          if (coords.hasOwnProperty(key)) {
+            if (coords[key][1] < min) {
+              min = coords[key][1];
+              min_v = key;
+            }
+
+          }
+        }
+        return min_v
+      }
+
+      function stop() {
+        is_spin = false;
+        rotate_c(start_angle-angle);
+        loadTextFromFile(getFirst());
+        
+
+        
+      }
+      
+      function spin() {
+        is_spin = true;
+        start_angle = angle;
+       
+
+        setTimeout(stop, Math.floor(Math.random() * 10000));
+
+      }
+      rotate_c(PI2/4)
+
+
+
+      function loadTextFromFile(index) {
+        // Вместо "file.txt" укажите путь к вашему файлу
+        fetch('tasks.txt')
+          .then(response => response.text())
+          .then(text => {
+            // Разбиваем текст на строки
+            const lines = text.split('\n');
+            // Получаем строку с соответствующим индексом
+            const line = lines[index-1];
+            // Выводим строку на экран
+            alert(line)
+          })
+          .catch(error => console.log(error));
+      }
+    </script>
+    <br>
+  <button class="my_button" id="b_spin" onclick="spin()">Крутить</button>
+
+  </div>
+
+  <!-- <button id="b_first" onclick="getFirst()">First</button> -->
+</body>
+
+</html>
